@@ -1,4 +1,4 @@
-# 💳 app-banca-movil
+# 💳 app-banca-movil 
 
 Repositorio principal del proyecto de referencia **App Banca Móvil**, desarrollado como parte del taller **"Integración de Azure DevOps con GitHub Repos"** para la organización `core-banca-ti`.
 
@@ -11,3 +11,5 @@ Este repositorio simula una aplicación bancaria con integración completa entre
 - Usar `Pull Requests` con revisión mínima de 2 personas  
 - Automatizar pruebas y escaneos antes del despliegue  
 - Versionar artefactos y registrar los cambios en cada sprint
+
+Modificacion para user story
