@@ -1,0 +1,83 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+name: '$(Build.DefinitionName)_$(Date:yyyyMMdd)$(Rev:.r)'
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  webAppName: 'webapp-banca-movil'
+  azureSubscription: 'sc-webapp-banca'
+
+stages:
+  - stage: CI
+    displayName: 'Integración Continua'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Validar y compilar'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '18.x'
+            displayName: 'Instalar Node.js'
+
+          - script: npm ci
+            displayName: 'Instalar dependencias'
+
+          - script: npm run lint
+            displayName: 'Lint'
+
+          - script: npm run test
+            displayName: 'Pruebas'
+
+          - script: npm run build
+            displayName: 'Compilación'
+
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: 'dist'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/webapp.zip'
+              replaceExistingArchive: true
+            displayName: 'Empaquetar artefactos'
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'drop'
+            displayName: 'Publicar artefactos'
+
+  - stage: CD
+    displayName: 'Despliegue a Web App de Azure'
+    dependsOn: CI
+    condition: succeeded()
+    jobs:
+      - deployment: DeployWebApp
+        displayName: 'Desplegar en Azure Web App'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    artifactName: 'drop'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+                  displayName: 'Descargar artefactos'
+
+                - task: AzureWebApp@1
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webAppLinux'
+                    appName: '$(webAppName)'
+                    package: '$(System.ArtifactsDirectory)/drop/webapp.zip'
+                  displayName: 'Publicar en Azure Web App'
